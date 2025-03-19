@@ -1,23 +1,25 @@
 import express from "express";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import firebaseServices from "../firebase.js";
+import {getUserDetailsByEmail} from "../email.js";
 
 const router = express.Router();
 const { db } = firebaseServices;
 
-// Request Water Connection API
 router.post("/", async (req, res) => {
     try {
-        const { fullName, email, phoneNumber, address } = req.body;
+        const {email} = req.body;
 
-        // Create request entry in Firestore
+        const user = await getUserDetailsByEmail(email);
+
+        // Creates request entry in Firestore
         const docRef = await addDoc(collection(db, "connectionRequests"), {
-            fullName,
-            email,
-            phoneNumber,
-            address,
-            status: "Pending", // Initial status
-            assignedTo: "Plumbing & Installation Unit", // Assign department
+            firstName: user.firstName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            address: user.address,
+            status: "Pending",
+            assignedTo: "Plumbing & Installation Unit", 
             createdAt: serverTimestamp()
         });
 

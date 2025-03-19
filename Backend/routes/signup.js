@@ -8,11 +8,11 @@ const router = express.Router();
 
 router.post("/", async(req, res)=>{
     try{
-        const {firstName, lastName, email, phoneNumber, idNumber,  password} = req.body;
+        const {firstName, lastName, email, phoneNumber, idNumber, address, password} = req.body;
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const userCollection = collection(db, "user");
-        const docRef = await addDoc(userCollection, {email, firstName, lastName, phoneNumber, idNumber} );
+        const docRef = await addDoc(userCollection, {email, firstName, lastName, phoneNumber, idNumber, address} );
         console.log('User created with User ID:', docRef.id);
         res.status(201).json({ message: "User created successfully", user: user });
 
