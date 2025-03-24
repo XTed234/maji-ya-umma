@@ -71,7 +71,7 @@ function RegisterPage() {
             <div className="flex justify-center">
               <Droplet className="h-16 w-16 text-[#1EBBD7]" />
             </div>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">HydroPay</h1>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">MajiYaUmma</h1>
             <p className="mt-2 text-xl text-[#1EBBD7] font-medium">Managing Water, Empowering Users</p>
           </div>
 
@@ -129,7 +129,7 @@ function RegisterPage() {
             <form onSubmit={handleSubmit}>
               <CardHeader>
                 <CardTitle className="text-2xl">Create an Account</CardTitle>
-                <CardDescription>Join HydroPay to manage your water service</CardDescription>
+                <CardDescription>Join MajiYaUmma to manage your water service</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
                 {error && (
