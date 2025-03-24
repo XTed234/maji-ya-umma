@@ -48,7 +48,7 @@ export function CustomerLayout({ children }) {
                 key={item.name}
                 to={item.href}
                 className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-                  pathname === item.href ? "bg-water text-water-foreground" : "hover:bg-muted"
+                  pathname === item.href ? "bg-black text-water-foreground" : "hover:bg-muted"
                 }`}
                 onClick={() => setOpen(false)}
               >
