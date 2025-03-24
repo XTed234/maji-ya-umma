@@ -68,7 +68,7 @@ function LoginPage() {
             <div className="flex justify-center">
               <Droplet className="h-16 w-16 text-[#1EBBD7]" />
             </div>
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">HydroPay</h1>
+            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">Maji ya Umma</h1>
             <p className="mt-2 text-xl text-[#1EBBD7] font-medium">Managing Water, Empowering Users</p>
           </div>
 

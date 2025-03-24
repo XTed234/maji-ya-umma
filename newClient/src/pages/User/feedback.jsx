@@ -81,7 +81,7 @@ function FeedbackPage() {
                 </div>
                 <div className="flex items-center justify-between border-b pb-2">
                   <p className="font-medium">Email</p>
-                  <p>support@hydropay.example</p>
+                  <p>support@MajiYaUmma.example</p>
                 </div>
                 <div className="flex items-center justify-between border-b pb-2">
                   <p className="font-medium">Hours</p>

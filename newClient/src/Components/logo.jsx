@@ -8,7 +8,7 @@ export function Logo({ variant = "default" }) {
       className={`flex items-center gap-2 ${variant === "admin" ? "text-amber-600" : "text-water"}`}
     >
       <Droplet  />
-      <span className="font-bold text-xl">{variant === "admin" ? "HydroPay Admin" : "HydroPay"}</span>
+      <span className="font-bold text-xl">{variant === "admin" ? "MajiYaUmma Admin" : "MajiYaUmma"}</span>
     </Link>
   )
 }
