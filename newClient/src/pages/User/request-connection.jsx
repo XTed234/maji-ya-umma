@@ -22,6 +22,11 @@ function RequestConnectionPage() {
       try {
         const response = await fetch(`http://localhost:5000/api/profile?email=${email}`);
         const data = await response.json();
+        setFormData({
+          address: data.user.address,
+          city: data.user.city,
+          zipCode: data.user.zipCode,
+        });
       } catch (err) {
         setError("Error fetching user profile.",err);
         setIsLoading(false);
@@ -108,6 +113,12 @@ function RequestConnectionPage() {
           </div>
         ) : (
           <div>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="mt-4 px-4 py-2 bg-[#1EBBD7] text-white rounded-md hover:bg-[#1EBBD7]/90"
+            >
+              Go Back to the Dashboard
+            </button>
             {/* Show the saved profile address */}
             <p className="text-gray-700 font-medium">
               Is the new connection at this location?
