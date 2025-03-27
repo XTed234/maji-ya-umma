@@ -4,7 +4,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Button } from "../../components/ui/button"
 import { Download } from "lucide-react"
 import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
 
 function PaymentsPage() {
   const payments = [
@@ -21,11 +20,10 @@ function PaymentsPage() {
   const downloadReceipt = (payment) => {
     const doc = new jsPDF()
        
-    // Title
+    
     doc.setFontSize(18)
     doc.text("Payment Receipt", 20, 20)
 
-    // Payment Details
     doc.setFontSize(12)
     doc.text(`Payment ID: ${payment.id}`, 20, 40)
     doc.text(`Date: ${payment.date}`, 20, 50)
@@ -33,11 +31,9 @@ function PaymentsPage() {
     doc.text(`Payment Method: ${payment.method}`, 20, 70)
     doc.text(`Status: ${payment.status}`, 20, 80)
 
-    // Footer
     doc.setFontSize(10)
     doc.text("Thank you for your payment!", 20, 100)
 
-    // Save PDF
     doc.save(`Receipt-${payment.id}.pdf`)
   }
   

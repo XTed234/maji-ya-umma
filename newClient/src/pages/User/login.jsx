@@ -47,9 +47,7 @@ function LoginPage() {
       // Login successful
       // Store email in localStorage
       localStorage.setItem('userEmail', email)
-      
-      // Redirect to request-connection page
-      navigate('/request-connection')
+      navigate("/dashboard");
       
     } catch (error) {
       console.error('Login error:', error)

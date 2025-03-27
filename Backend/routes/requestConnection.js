@@ -8,7 +8,7 @@ const { db } = firebaseServices;
 
 router.post("/", async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, address, city, zipCode } = req.body;
         
         const user = await getUserDetailsByEmail(email);
         
@@ -16,15 +16,21 @@ router.post("/", async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
         
+        const requestAddress = address || user.address;
+        const requestCity = city || user.city || "";
+        const requestZipCode = zipCode || user.zipCode || "";
+
         // Creates request entry in Firestore
         const docRef = await addDoc(collection(db, "connectionRequests"), {
             firstName: user.firstName,
             email: user.email,
             phoneNumber: user.phoneNumber,
-            address: user.address,
+            address: requestAddress,
+            city: requestCity,
+            zipCode: requestZipCode,
             status: "Pending",
             assignedTo: "Plumbing & Installation Unit",
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
         });
         
         res.status(201).json({ 

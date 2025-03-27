@@ -55,7 +55,7 @@ function FeedbackPage() {
     <CustomerLayout>
       <div className="container py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Submit Feedback</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Submit Complaint</h1>
           <p className="text-muted-foreground">Contact our support team or provide feedback</p>
         </div>
 

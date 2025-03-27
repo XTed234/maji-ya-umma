@@ -19,7 +19,7 @@ function CustomerDashboard() {
   ]
 
   return (
-    <CustomerLayout>
+    <CustomerLayout>    
       <div className="container py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -29,17 +29,20 @@ function CustomerDashboard() {
           <Button className="bg-water hover:bg-water-dark" asChild>
             <Link to="/bills">Pay Bill</Link>
           </Button>
+          <Button className="bg-water hover:bg-water-dark" asChild>
+             <Link to="/request-connection">Request Water Connection</Link>
+          </Button>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Current Balance"
-            value="Ksh12,450"
+            value="Ksh1,450"
             description="Due on April 15, 2025"
             icon={CreditCard}
             trend={{ value: 12, isPositive: false }}
           />
-          <StatCard title="Last Payment" value="Ksh 13, 000" description="Paid on March 10, 2025" icon={CreditCard} />
+          <StatCard title="Last Payment" value="Ksh 1, 000" description="Paid on March 10, 2025" icon={CreditCard} />
           <StatCard
             title="Current Usage"
             value="160 gal"
@@ -64,21 +67,21 @@ function CustomerDashboard() {
                   <p className="font-medium">Bill Generated</p>
                   <p className="text-sm text-muted-foreground">April 1, 2025</p>
                 </div>
-                <p className="font-medium">Ksh 12450</p>
+                <p className="font-medium">Ksh 1250</p>
               </div>
               <div className="flex items-center justify-between border-b pb-2">
                 <div>
                   <p className="font-medium">Payment Received</p>
                   <p className="text-sm text-muted-foreground">March 10, 2025</p>
                 </div>
-                <p className="font-medium text-green-600">Ksh 11,820</p>
+                <p className="font-medium text-green-600">Ksh 1120</p>
               </div>
               <div className="flex items-center justify-between border-b pb-2">
                 <div>
                   <p className="font-medium">Bill Generated</p>
                   <p className="text-sm text-muted-foreground">March 1, 2025</p>
                 </div>
-                <p className="font-medium">Ksh 11,820</p>
+                <p className="font-medium">Ksh 1820</p>
               </div>
             </CardContent>
             <CardFooter>

@@ -44,16 +44,6 @@ function RegisterPage() {
       
       const data = await response.json();
       
-      if (response.ok) {
-        // If signup successful, navigate to request connection page
-
-        localStorage.setItem("userEmail", formData.email);
-        
-        navigate("/request-connection");
-      } else {
-        // Handle signup error
-        setError(data.message || "Registration failed. Please try again later.");
-      }
     } catch (error) {
       console.error("Error during registration:", error);
       setError("Network error or server unavailable. Please try again later.");
