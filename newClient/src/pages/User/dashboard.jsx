@@ -1,25 +1,57 @@
-import { Link } from "react-router-dom"
-import { BarChart3, CreditCard, Droplet, LifeBuoy } from "lucide-react"
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { BarChart3, CreditCard, Droplet, LifeBuoy } from "lucide-react";
 
-import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
-import { CustomerLayout } from "../../Components/customer-layout"
-import { StatCard } from "../../Components/stat-card"
-import { UsageChart } from "../../Components/usage-chart"
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { CustomerLayout } from "../../Components/customer-layout";
+import { StatCard } from "../../Components/stat-card";
+import { UsageChart } from "../../Components/usage-chart";
+import { getUsageDataFromLocalStorage } from "./utils";
 
 function CustomerDashboard() {
-  // Sample data for the usage chart
-  const usageData = [
-    { month: "Jan", usage: 120 },
-    { month: "Feb", usage: 150 },
-    { month: "Mar", usage: 180 },
-    { month: "Apr", usage: 140 },
-    { month: "May", usage: 130 },
-    { month: "Jun", usage: 160 },
-  ]
+  const [currentUsage, setCurrentUsage] = useState(0);
+  const [averageUsage, setAverageUsage] = useState(0);
+  const [usageChartData, setUsageChartData] = useState([]);
+  const [currentBalance, setCurrentBalance] = useState(0);
+
+  useEffect(() => {
+    const calculateUsage = () => {
+      const usageData3Months = getUsageDataFromLocalStorage("3months") || [];
+      const usageData6Months = getUsageDataFromLocalStorage("6months") || [];
+      const usageData1Year = getUsageDataFromLocalStorage("1year") || [];
+
+      const allUsageData = [...usageData3Months, ...usageData6Months, ...usageData1Year];
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+
+      const currentMonthUsage = allUsageData.filter((entry) => {
+        const entryDate = new Date(entry.month);
+        return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+      });
+
+      const totalCurrentUsage = currentMonthUsage.reduce((sum, entry) => sum + entry.usage, 0);
+      setCurrentUsage(totalCurrentUsage);
+
+      const totalAverageUsage = allUsageData.reduce((sum, entry) => sum + entry.usage, 0);
+      const averageUsageValue = allUsageData.length > 0 ? totalAverageUsage / allUsageData.length : 0;
+      setAverageUsage(averageUsageValue);
+
+      setUsageChartData(
+        allUsageData.map((entry) => ({
+          month: entry.month.split(" ")[0],
+          usage: entry.usage,
+        }))
+      );
+
+      setCurrentBalance(totalCurrentUsage * 3);
+    };
+
+    calculateUsage();
+  }, []);
 
   return (
-    <CustomerLayout>    
+    <CustomerLayout>
       <div className="container py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -30,31 +62,31 @@ function CustomerDashboard() {
             <Link to="/bills">Pay Bill</Link>
           </Button>
           <Button className="bg-water hover:bg-water-dark" asChild>
-             <Link to="/request-connection">Request Water Connection</Link>
+            <Link to="/request-connection">Request Water Connection</Link>
           </Button>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Current Balance"
-            value="Ksh1,450"
-            description="Due on April 15, 2025"
+            value={`Ksh ${currentBalance}`}
+            description={`Due on ${new Date().toLocaleDateString()}`}
             icon={CreditCard}
             trend={{ value: 12, isPositive: false }}
           />
           <StatCard title="Last Payment" value="Ksh 1, 000" description="Paid on March 10, 2025" icon={CreditCard} />
           <StatCard
             title="Current Usage"
-            value="160 gal"
-            description="As of April 5, 2025"
+            value={`${currentUsage} gal`}
+            description={`As of ${new Date().toLocaleDateString()}`}
             icon={Droplet}
             trend={{ value: 8, isPositive: true }}
           />
-          <StatCard title="Average Usage" value=" 600 litrs" description="Last 6 months" icon={BarChart3} />
+          <StatCard title="Average Usage" value={`${averageUsage.toFixed(2)} litrs`} description="Last 6 months" icon={BarChart3} />
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <UsageChart data={usageData} />
+          <UsageChart data={usageChartData} />
 
           <Card>
             <CardHeader>
@@ -114,8 +146,7 @@ function CustomerDashboard() {
         </div>
       </div>
     </CustomerLayout>
-  )
+  );
 }
 
-export default CustomerDashboard
-
+export default CustomerDashboard;
