@@ -174,7 +174,7 @@ function FeedbackPage() {
                 <div className="border-b pb-2">
                   <p className="font-medium">How do I read my water meter?</p>
                   <p className="text-sm text-muted-foreground">
-                    Your water meter is typically located near the street. The dial shows your usage in gallons.
+                    Your water meter is typically located near the street. The dial shows your usage in liters.
                   </p>
                 </div>
                 <div className="border-b pb-2">

@@ -67,7 +67,7 @@ function AdminDashboard() {
           <UsageChart
             data={usageData}
             title="System-wide Usage"
-            description="Monthly water consumption in thousands of gallons"
+            description="Monthly water consumption in thousands of liters"
           />
 
           <Card>
