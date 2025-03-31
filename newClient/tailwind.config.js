@@ -8,6 +8,8 @@ module.exports = {
 		colors: {
 		  background: "hsl(var(--background))",
 		  foreground: "hsl(var(--foreground))",
+		  water: "#3498db", // Add your preferred color
+        "water-foreground": "#ffffff", // Example foreground color
 		  card: "hsl(var(--card))",
 		  "card-foreground": "hsl(var(--card-foreground))",
 		  popover: "hsl(var(--popover))",

@@ -10,6 +10,7 @@
   import PaymentsPage from "./pages/User/payments"
   import FeedbackPage from "./pages/User/feedback"
   import ProfilePage from "./pages/User/profile"
+  import HomePage from "./pages/User/home"
   import RequestConnectionPage from "./pages/User/request-connection"
 
   // Admin pages
@@ -26,7 +27,8 @@
     
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={< HomePage/>}/>
+          {/*<Route path="/" element={<Navigate to="/login" replace />} /> */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="request-connection" element={<RequestConnectionPage/>}/>

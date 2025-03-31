@@ -15,6 +15,9 @@ function RegisterPage() {
     phoneNumber: "",
     idNumber: "",
     address: "",
+    city: "",
+    state: "",
+    zipCode: "",
     password: ""
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -43,17 +46,8 @@ function RegisterPage() {
       });
       
       const data = await response.json();
+      navigate("/login");
       
-      if (response.ok) {
-        // If signup successful, navigate to request connection page
-
-        localStorage.setItem("userEmail", formData.email);
-        
-        navigate("/request-connection");
-      } else {
-        // Handle signup error
-        setError(data.message || "Registration failed. Please try again later.");
-      }
     } catch (error) {
       console.error("Error during registration:", error);
       setError("Network error or server unavailable. Please try again later.");
@@ -194,6 +188,34 @@ function RegisterPage() {
                     id="address" 
                     placeholder="Your residential address" 
                     value={formData.address}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input 
+                    id="city" 
+                    placeholder="City of residence" 
+                    value={formData.city}
+                    onChange={handleChange}
+                    required
+                  />
+                </div><div className="grid gap-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input 
+                    id="state" 
+                    placeholder="Your state" 
+                    value={formData.state}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="zipCode">Zip Code</Label>
+                  <Input 
+                    id="zipCode" 
+                    placeholder="Your Zip Code" 
+                    value={formData.zipCode}
                     onChange={handleChange}
                     required
                   />

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { Button } from "../../components/ui/button"
 import { Download } from "lucide-react"
+import jsPDF from "jspdf"
 
 function PaymentsPage() {
   const payments = [
@@ -14,6 +15,28 @@ function PaymentsPage() {
     { id: "P-2024-11-001", date: "November 10, 2024", amount: 12560, method: "Bank Transfer", status: "Completed" },
   ]
 
+
+  // Function to generate PDF Receipt
+  const downloadReceipt = (payment) => {
+    const doc = new jsPDF()
+       
+    
+    doc.setFontSize(18)
+    doc.text("Payment Receipt", 20, 20)
+
+    doc.setFontSize(12)
+    doc.text(`Payment ID: ${payment.id}`, 20, 40)
+    doc.text(`Date: ${payment.date}`, 20, 50)
+    doc.text(`Amount: Ksh ${payment.amount.toFixed(2)}`, 20, 60)
+    doc.text(`Payment Method: ${payment.method}`, 20, 70)
+    doc.text(`Status: ${payment.status}`, 20, 80)
+
+    doc.setFontSize(10)
+    doc.text("Thank you for your payment!", 20, 100)
+
+    doc.save(`Receipt-${payment.id}.pdf`)
+  }
+  
   return (
     <CustomerLayout>
       <div className="container py-8">
@@ -72,7 +95,7 @@ function PaymentsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-2">
-                        <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => downloadReceipt(payment)}>
                           <Download className="mr-1 h-4 w-4" />
                           Receipt
                         </Button>

@@ -5,6 +5,8 @@ import signUpRouter from './routes/signup.js';
 import loginRouter from './routes/login.js';
 import requestConnectionRoute from './routes/requestConnection.js';
 import profileRouter from "./routes/profile.js";
+import profileUpdate from "./routes/profileUpdate.js";
+import feedbackRouter from "./routes/feedbackRoute.js";
 
 const app = express();
 
@@ -16,7 +18,9 @@ app.use("/api/signup", signUpRouter);
 app.use('/api/login', loginRouter);
 app.use('/api/users', userRoutes);
 app.use('/api/request-connection', requestConnectionRoute);
-app.use("/api/profile", profileRouter); 
+app.use("/api/profile", profileRouter);
+app.use("/api/update-profile", profileUpdate);
+app.use("/api/feedback", feedbackRouter); 
 
 app.get("/", async (req, res) => {
   res.send("Welcome");  
