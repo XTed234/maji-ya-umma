@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CreditCard, Smartphone, Building } from "lucide-react";
+import { CreditCard, Smartphone, Building, Loader2 } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
@@ -20,6 +22,7 @@ function BillsPage() {
   const [cvv, setCvv] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const calculateTotalUsage = () => {
@@ -46,11 +49,34 @@ function BillsPage() {
   }, []);
 
   const handlePayment = () => {
-    alert(`Processing payment of Ksh ${customAmount} via ${paymentMethod}`);
+    setIsProcessing(true);
+
+    setTimeout(() => {
+      toast.success(`Payment of Ksh ${customAmount} via ${paymentMethod} was successful! 🎉`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+
+      setCardNumber("");
+      setCvv("");
+      setBankName("");
+      setAccountNumber("");
+      setCustomAmount(0);
+      setIsProcessing(false);
+    }, 2000);
   };
 
   return (
     <CustomerLayout>
+      <ToastContainer /> 
+
+      {/* Full-Page Loading Overlay */}
+      {isProcessing && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Loader2 className="h-16 w-16 animate-spin text-white" />
+        </div>
+      )}
+
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Pay Your Bill</h1>
@@ -145,10 +171,8 @@ function BillsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-water hover:bg-water-dark" onClick={handlePayment}>
-                {(paymentMethod === "card" && cardNumber && cvv) || (paymentMethod === "bank" && bankName && accountNumber)
-                  ? "Confirm Payment"
-                  : "Pay Now"}
+              <Button className="w-full bg-water hover:bg-water-dark" onClick={handlePayment} disabled={isProcessing}>
+                Confirm Payment
               </Button>
             </CardFooter>
           </Card>
