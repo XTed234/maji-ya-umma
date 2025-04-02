@@ -78,7 +78,7 @@ export default function HomePage() {
         <div className="bg-gray-900 text-gray-300 py-16 px-6 text-center">
           <h2 className="text-4xl font-bold mb-4 text-gray-200">About Us</h2>
           <p className="text-lg md:text-xl max-w-3xl mx-auto">
-            At Maji ya Umma, we believe that clean water isn’t a luxury—it’s a right. Our work goes beyond just providing water; we empower communities with sustainable solutions that last. By combining innovative technology with local knowledge, we ensure that every household has access to safe, affordable water—because no one should have to choose between health and survival.
+            At Maji ya Umma, we believe that clean water isn’t a luxury—it’s a right. Our work goes beyond just providing water; we empower communities with sustainable water solutions that last. By combining innovative technology with local knowledge, we ensure that every household has access to safe, affordable water—because no one should have to choose between health and survival.
           </p>
         </div>
       </div>
