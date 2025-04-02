@@ -7,6 +7,7 @@ import requestConnectionRoute from './routes/requestConnection.js';
 import profileRouter from "./routes/profile.js";
 import profileUpdate from "./routes/profileUpdate.js";
 import feedbackRouter from "./routes/feedbackRoute.js";
+import paymentRouter from "./routes/paymentRoute.js";
 
 const app = express();
 
@@ -21,6 +22,8 @@ app.use('/api/request-connection', requestConnectionRoute);
 app.use("/api/profile", profileRouter);
 app.use("/api/update-profile", profileUpdate);
 app.use("/api/feedback", feedbackRouter); 
+app.use("/api/payment", paymentRouter);
+
 
 app.get("/", async (req, res) => {
   res.send("Welcome");  

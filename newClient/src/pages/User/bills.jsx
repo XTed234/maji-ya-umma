@@ -22,6 +22,7 @@ function BillsPage() {
   const [cvv, setCvv] = useState("");
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -48,23 +49,70 @@ function BillsPage() {
     calculateTotalUsage();
   }, []);
 
-  const handlePayment = () => {
-    setIsProcessing(true);
 
-    setTimeout(() => {
-      toast.success(`Payment of Ksh ${customAmount} via ${paymentMethod} was successful! 🎉`, {
+  const handlePayment = async () => {
+    const email = localStorage.getItem("userEmail");        
+
+    setIsProcessing(true);
+    let paymentDetails = {};
+
+    if (paymentMethod === "card") {
+      paymentDetails = { cardNumber, cvv };
+    } else if (paymentMethod === "bank") {
+      paymentDetails = { bankName, accountNumber };
+    } else if (paymentMethod === "mpesa") {
+      paymentDetails = { mpesa: phoneNumber };
+    }
+
+    const paymentData = {
+      email,
+      customAmount,
+      paymentMethod,
+      paymentDetails,
+    };
+     // Log the request body (paymentData)
+  console.log("Request body:", paymentData);
+
+    try {
+      const response = await fetch("http://localhost:5000/api/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        toast.success(`Payment of Ksh ${customAmount} via ${paymentMethod} was successful! 🎉`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error(data.message || "Error processing payment", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred while processing payment.", {
         position: "top-right",
         autoClose: 3000,
       });
+    }
 
-      setCardNumber("");
-      setCvv("");
-      setBankName("");
-      setAccountNumber("");
-      setCustomAmount(0);
-      setIsProcessing(false);
-    }, 2000);
+  
+    setCardNumber("");
+    setCvv("");
+    setBankName("");
+    setAccountNumber("");
+    setPhoneNumber("");
+    setCustomAmount(0);
+    setIsProcessing(false);
   };
+  
+
 
   return (
     <CustomerLayout>
@@ -139,7 +187,7 @@ function BillsPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="mpesa" id="mpesa" />
-                  <Label htmlFor="mpesa" className="flex items-center gap-2">
+                  <Label htmlFor="Enter Phone Number" className="flex items-center gap-2">
                     <Smartphone className="h-4 w-4" />
                     M-Pesa
                   </Label>
@@ -157,6 +205,13 @@ function BillsPage() {
                 <div className="space-y-4">
                   <Input placeholder="Bank Name" value={bankName} onChange={e => setBankName(e.target.value)} />
                   <Input placeholder="Account Number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} />
+                </div>
+              )}
+
+              {paymentMethod === "mpesa" && (
+                <div className="space-y-4">
+                  <Label htmlFor="amount">Enter M-PESA Phone Number</Label>
+                  <Input placeholder="Phone Number" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
                 </div>
               )}
 
