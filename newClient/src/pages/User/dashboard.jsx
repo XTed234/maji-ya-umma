@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { BarChart3, CreditCard, Droplet, LifeBuoy } from "lucide-react";
-
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
 import { CustomerLayout } from "../../Components/customer-layout";
@@ -14,6 +13,29 @@ function CustomerDashboard() {
   const [averageUsage, setAverageUsage] = useState(0);
   const [usageChartData, setUsageChartData] = useState([]);
   const [currentBalance, setCurrentBalance] = useState(0);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const email = localStorage.getItem("userEmail");        
+        const response = await fetch(`http://localhost:5000/api/profile?email=${email}`);
+        const data = await response.json();
+
+        console.log("API Response:", data);
+
+        if (data.user) {
+          setFirstName(data.user.firstName); 
+          setLastName(data.user.lastName);           
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   useEffect(() => {
     const calculateUsage = () => {
@@ -56,7 +78,7 @@ function CustomerDashboard() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, John Doe</p>
+            <p className="text-muted-foreground">Welcome back {firstName} {lastName}</p>
           </div>
           <Button className="bg-water hover:bg-water-dark" asChild>
             <Link to="/bills">Pay Bill</Link>
@@ -74,7 +96,7 @@ function CustomerDashboard() {
             icon={CreditCard}
             trend={{ value: 12, isPositive: false }}
           />
-          <StatCard title="Last Payment" value="Ksh 1, 000" description="Paid on March 10, 2025" icon={CreditCard} />
+          <StatCard title="Last Payment" value="Ksh 1,000" description="Paid on March 10, 2025" icon={CreditCard} />
           <StatCard
             title="Current Usage"
             value={`${currentUsage} liters`}
@@ -82,7 +104,7 @@ function CustomerDashboard() {
             icon={Droplet}
             trend={{ value: 8, isPositive: true }}
           />
-          <StatCard title="Average Usage" value={`${averageUsage.toFixed(2)} litrs`} description="Last 6 months" icon={BarChart3} />
+          <StatCard title="Average Usage" value={`${averageUsage.toFixed(2)} liters`} description="Last 6 months" icon={BarChart3} />
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2">
