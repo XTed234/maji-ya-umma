@@ -77,7 +77,7 @@ function CustomerDashboard() {
           <StatCard title="Last Payment" value="Ksh 1, 000" description="Paid on March 10, 2025" icon={CreditCard} />
           <StatCard
             title="Current Usage"
-            value={`${currentUsage} gal`}
+            value={`${currentUsage} liters`}
             description={`As of ${new Date().toLocaleDateString()}`}
             icon={Droplet}
             trend={{ value: 8, isPositive: true }}

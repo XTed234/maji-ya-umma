@@ -148,7 +148,7 @@ function FeedbackPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between border-b pb-2">
                   <p className="font-medium">Customer Support</p>
-                  <p>+254 123456789</p>
+                  <p>+254 796657269</p>
                 </div>
                 <div className="flex items-center justify-between border-b pb-2">
                   <p className="font-medium">Email</p>
@@ -160,7 +160,7 @@ function FeedbackPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <p className="font-medium">Emergency Line</p>
-                  <p>+254 123456789</p>
+                  <p>+254 796657269</p>
                 </div>
               </CardContent>
             </Card>
@@ -186,7 +186,7 @@ function FeedbackPage() {
                 <div className="border-b pb-2">
                   <p className="font-medium">How do I report a water leak?</p>
                   <p className="text-sm text-muted-foreground">
-                    Call our emergency line immediately at (555) 987-6543 to report water leaks.
+                    Call our emergency line immediately at +254 796657269 to report water leaks.
                   </p>
                 </div>
                 <div>

@@ -6,15 +6,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
-import { getUsageDataFromLocalStorage } from "./utils"; // Import the utility function
+import { getUsageDataFromLocalStorage } from "./utils"; 
 import { CustomerLayout } from "../../Components/customer-layout";
 
-const WATER_PRICE_PER_LITER = 3; // Adjust based on your pricing model
+const WATER_PRICE_PER_LITER = 3; 
 
 function BillsPage() {
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [waterUsage, setWaterUsage] = useState(0);
   const [totalAmountDue, setTotalAmountDue] = useState(0);
+  const [customAmount, setCustomAmount] = useState(0);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
 
   useEffect(() => {
     const calculateTotalUsage = () => {
@@ -27,17 +32,22 @@ function BillsPage() {
       const currentYear = new Date().getFullYear();
 
       const filteredUsage = allUsageData.filter(entry => {
-        const entryDate = new Date(entry.month); // Assuming month is in "Month Year" format
+        const entryDate = new Date(entry.month);
         return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
       });
 
       const totalLiters = filteredUsage.reduce((sum, entry) => sum + entry.usage, 0);
       setWaterUsage(totalLiters);
       setTotalAmountDue(totalLiters * WATER_PRICE_PER_LITER);
+      setCustomAmount(totalLiters * WATER_PRICE_PER_LITER);
     };
 
     calculateTotalUsage();
   }, []);
+
+  const handlePayment = () => {
+    alert(`Processing payment of Ksh ${customAmount} via ${paymentMethod}`);
+  };
 
   return (
     <CustomerLayout>
@@ -110,11 +120,17 @@ function BillsPage() {
                 </div>
               </RadioGroup>
 
-              {paymentMethod === "mpesa" && (
-                <div className="rounded-md bg-blue-50 p-4">
-                  <p className="text-sm text-blue-700">
-                    <strong>Paybill Instructions:</strong> Go to M-Pesa &gt; Lipa na M-Pesa &gt; Paybill &gt; Enter Business No: <strong>654321</strong> &gt; Account No: <strong>WP-1001</strong> &gt; Amount: Ksh {totalAmountDue} &gt; Your M-Pesa PIN
-                  </p>
+              {paymentMethod === "card" && (
+                <div className="space-y-4">
+                  <Input placeholder="Card Number" value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
+                  <Input placeholder="CVV" type="password" value={cvv} onChange={e => setCvv(e.target.value)} />
+                </div>
+              )}
+
+              {paymentMethod === "bank" && (
+                <div className="space-y-4">
+                  <Input placeholder="Bank Name" value={bankName} onChange={e => setBankName(e.target.value)} />
+                  <Input placeholder="Account Number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} />
                 </div>
               )}
 
@@ -123,14 +139,16 @@ function BillsPage() {
                   <Label htmlFor="amount">Payment Amount</Label>
                   <div className="flex items-center">
                     <span className="mr-2">Ksh</span>
-                    <Input id="amount" value={totalAmountDue} readOnly />
+                    <Input id="amount" type="number" value={customAmount} onChange={e => setCustomAmount(e.target.value)} />
                   </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button className="w-full bg-water hover:bg-water-dark">
-                {paymentMethod === "mpesa" ? "Confirm Payment" : "Pay Now"}
+              <Button className="w-full bg-water hover:bg-water-dark" onClick={handlePayment}>
+                {(paymentMethod === "card" && cardNumber && cvv) || (paymentMethod === "bank" && bankName && accountNumber)
+                  ? "Confirm Payment"
+                  : "Pay Now"}
               </Button>
             </CardFooter>
           </Card>
