@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "meterReadings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "meterNumber", "order": "ASCENDING" },
+        { "fieldPath": "readAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "meterReadings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "meterNumber", "order": "ASCENDING" },
+        { "fieldPath": "readAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

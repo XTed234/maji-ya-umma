@@ -1,10 +1,17 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "worker": "nodemon worker.js",
+    "start:prod": "node server.js",
+    "worker:prod": "node worker.js",
+    "set-role": "node scripts/set-role.js",
+    "simulate-readings": "node scripts/simulate-readings.js",
+    "purge-card-data": "node scripts/purge-card-data.js",
+    "test:e2e": "node test/e2e.js",
+    "test:mpesa": "node test/mpesa-verify.js"
   },
   "keywords": [],
   "author": "",
@@ -12,10 +19,18 @@
   "description": "",
   "type": "module",
   "dependencies": {
+    "amqplib": "^0.10.9",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "firebase": "^11.4.0",
+    "express-rate-limit": "^8.7.4",
+    "firebase-admin": "^14.5.1",
+    "helmet": "^8.3.0",
     "multer": "^1.4.5-lts.2",
-    "nodemon": "^3.1.9"
+    "nodemailer": "^10.5.0",
+    "nodemon": "^3.1.9",
+    "stripe": "^23.1.0"
+  },
+  "engines": {
+    "node": ">=20.12"
   }
 }
