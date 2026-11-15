@@ -1,15 +1,22 @@
 import { useState } from "react"
-import { Link, useLocation } from "react-router-dom"
-import { BarChart3, CreditCard, Droplet, Home, LifeBuoy, LogOut, Menu, Settings, User, X } from "lucide-react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
+import { BarChart3, CreditCard, Droplet, Home, LifeBuoy, LogOut, Menu, User, X } from "lucide-react"
 
 import { Button } from "../components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet"
 import { Logo } from "./logo"
+import { useAuth } from "../auth/AuthProvider"
 
 export function CustomerLayout({ children }) {
   const location = useLocation()
   const pathname = location.pathname
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  const { profile, isAdmin, logout } = useAuth()
+  const handleLogout = async () => {
+    await logout()
+    navigate("/login", { replace: true })
+  }
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -79,15 +86,13 @@ export function CustomerLayout({ children }) {
 
     {/* Right Section: Settings and Logout */}
     <div className="flex items-center gap-4">
-      <Button variant="ghost" size="icon">
-        <Settings className="h-5 w-5" />
-        <span className="sr-only">Settings</span>
-      </Button>
-      <Button variant="ghost" size="icon" asChild>
-        <Link to="/login">
-          <LogOut className="h-5 w-5" />
-          <span className="sr-only">Log out</span>
-        </Link>
+      {isAdmin && (
+        <Link to="/admin/dashboard" className="hidden text-xs text-muted-foreground hover:text-foreground lg:inline">Admin</Link>
+      )}
+      <span className="hidden text-sm text-muted-foreground sm:inline">{profile?.firstName}</span>
+      <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
+        <LogOut className="h-5 w-5" />
+        <span className="sr-only">Log out</span>
       </Button>
     </div>
   </div>

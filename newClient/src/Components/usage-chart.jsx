@@ -1,83 +1,67 @@
 import { useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 
-export function UsageChart({ data, title = "Water Usage", description = "Monthly water consumption in litres" }) {
+// data: [{ month: "Oct", usage: 4.5 }]
+export function UsageChart({ data, title = "Water Usage", description = "Monthly water consumption in m³", unit = "m³" }) {
   const canvasRef = useRef(null)
+  const hasData = data.some((d) => d.usage > 0)
 
   useEffect(() => {
-    if (!canvasRef.current) return
-
-    const ctx = canvasRef.current.getContext("2d")
+    const canvas = canvasRef.current
+    const ctx = canvas?.getContext("2d")
     if (!ctx) return
 
-    // Clear canvas
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+    const { width, height } = canvas
+    ctx.clearRect(0, 0, width, height)
+    if (!data.length) return
 
-    // Set dimensions
-    const width = canvasRef.current.width
-    const height = canvasRef.current.height
-    const padding = 40
+    const padding = 48
     const chartWidth = width - padding * 2
     const chartHeight = height - padding * 2
-
-    // Find max value for scaling
-    const maxUsage = Math.max(...data.map((item) => item.usage))
+    const maxUsage = Math.max(...data.map((d) => d.usage), 1)
     const scale = chartHeight / maxUsage
+    const text = getComputedStyle(canvas).color || "#64748b"
+    const fmt = (v) => (v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString())
 
-    // Draw axes
+    ctx.strokeStyle = "#94a3b8"
+    ctx.lineWidth = 1
     ctx.beginPath()
     ctx.moveTo(padding, padding)
     ctx.lineTo(padding, height - padding)
     ctx.lineTo(width - padding, height - padding)
-    ctx.strokeStyle = "#94a3b8"
-    ctx.lineWidth = 1
     ctx.stroke()
 
-    // Draw bars
-    const barWidth = (chartWidth / data.length) * 0.8
-    const barSpacing = (chartWidth / data.length) * 0.2
+    const slot = chartWidth / data.length
+    const barWidth = slot * 0.7
+    ctx.font = "12px sans-serif"
+    ctx.textAlign = "center"
 
-    data.forEach((item, index) => {
-      const x = padding + index * (barWidth + barSpacing) + barSpacing / 2
+    data.forEach((item, i) => {
+      const x = padding + i * slot + (slot - barWidth) / 2
       const barHeight = item.usage * scale
       const y = height - padding - barHeight
-
-      // Draw bar
-      ctx.fillStyle = "rgba(59, 130, 246, 0.8)"
+      ctx.fillStyle = "rgba(59, 130, 246, 0.85)"
       ctx.fillRect(x, y, barWidth, barHeight)
-
-      // Draw month label
-      ctx.fillStyle = "#64748b"
-      ctx.font = "10px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText(item.month, x + barWidth / 2, height - padding + 15)
-
-      // Draw usage value
-      ctx.fillStyle = "#1e293b"
-      ctx.font = "10px sans-serif"
-      ctx.textAlign = "center"
-      ctx.fillText(item.usage.toString(), x + barWidth / 2, y - 5)
+      ctx.fillStyle = text
+      ctx.fillText(item.month, x + barWidth / 2, height - padding + 16)
+      if (item.usage > 0) ctx.fillText(fmt(item.usage), x + barWidth / 2, y - 6)
     })
 
-    // Draw y-axis labels
-    const yAxisSteps = 5
-    for (let i = 0; i <= yAxisSteps; i++) {
-      const value = Math.round((maxUsage / yAxisSteps) * i)
+    ctx.textAlign = "right"
+    for (let i = 0; i <= 4; i++) {
+      const value = (maxUsage / 4) * i
       const y = height - padding - value * scale
-
-      ctx.fillStyle = "#64748b"
-      ctx.font = "10px sans-serif"
-      ctx.textAlign = "right"
-      ctx.fillText(value.toString(), padding - 5, y + 3)
-
-      // Draw grid line
+      ctx.fillStyle = text
+      ctx.fillText(fmt(value), padding - 6, y + 4)
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.2)"
       ctx.beginPath()
       ctx.moveTo(padding, y)
       ctx.lineTo(width - padding, y)
-      ctx.strokeStyle = "rgba(148, 163, 184, 0.2)"
       ctx.stroke()
     }
-  }, [data])
+    ctx.textAlign = "left"
+    ctx.fillText(unit, 4, padding - 16)
+  }, [data, unit])
 
   return (
     <Card>
@@ -86,11 +70,15 @@ export function UsageChart({ data, title = "Water Usage", description = "Monthly
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80 w-full">
-          <canvas ref={canvasRef} width={800} height={400} className="w-full h-full" />
+        <div className="relative h-80 w-full">
+          <canvas ref={canvasRef} width={800} height={400} className="h-full w-full text-muted-foreground" />
+          {!hasData && (
+            <p className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+              No usage recorded yet
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
   )
 }
-
