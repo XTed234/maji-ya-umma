@@ -1,0 +1,25 @@
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: maji-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # management UI: http://localhost:15672 (guest / guest)
+    # Fixed node name so the data directory is found again after the
+    # container is recreated.
+    hostname: maji-rabbitmq
+    volumes:
+      # Mount only the data dir. Mounting all of /var/lib/rabbitmq makes the
+      # first boot on a fresh volume fail (".erlang.cookie: eacces").
+      - rabbitmq-data:/var/lib/rabbitmq/mnesia
+    healthcheck:
+      # Run as the rabbitmq user: a CLI call as root before the server is up
+      # creates a root-owned .erlang.cookie and the server then can't start.
+      # (Same for manual checks: docker exec -u rabbitmq maji-rabbitmq ...)
+      test: ["CMD", "gosu", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq-data:
