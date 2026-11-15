@@ -1,188 +1,169 @@
-import { Download, FileText, PlusCircle, Search } from "lucide-react"
+import { useState } from "react"
+import { Search } from "lucide-react"
+import { toast } from "react-toastify"
+
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { AdminLayout } from "../../Components/admin-layout"
+import { DataTable, matches } from "../../Components/data-table"
+import { StatusBadge, ErrorNote } from "../../Components/status-badge"
+import { api, useApi } from "../../lib/api"
+import { ksh, m3, formatDate, formatDateTime, periodLabel, previousPeriod } from "../../lib/format"
+
+// The last 12 months that have ended, newest first.
+const endedPeriods = () => {
+  const [y, m] = previousPeriod().split("-").map(Number)
+  return Array.from({ length: 12 }, (_, i) => {
+    const idx = y * 12 + (m - 1) - i
+    return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, "0")}`
+  })
+}
 
 function BillingPage() {
+  const runs = useApi("/api/admin/billing-runs")
+  const tariff = useApi("/api/admin/tariff")
+  const [runPeriod, setRunPeriod] = useState(previousPeriod())
+  const [viewPeriod, setViewPeriod] = useState("all")
+  const [status, setStatus] = useState("all")
+  const [query, setQuery] = useState("")
+  const bills = useApi(`/api/admin/bills${viewPeriod !== "all" ? `?period=${viewPeriod}` : ""}`)
+  const [busy, setBusy] = useState(false)
+
+  const run = async () => {
+    setBusy(true)
+    try {
+      const res = await api("/api/admin/billing/run", { method: "POST", body: { period: runPeriod } })
+      toast.success(`${res.message}. Bills appear as the workers generate them.`)
+      setTimeout(() => { runs.reload(); bills.reload() }, 3000)
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const rows = (bills.data?.bills ?? []).filter(
+    (b) =>
+      (status === "all" || (status === "overdue" ? b.overdue : b.status === status)) &&
+      matches(query, b.customerName, b.accountNumber, b.meterNumber)
+  )
+
   return (
     <AdminLayout>
       <div className="container py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Billing Management</h1>
-            <p className="text-muted-foreground">Generate and manage customer bills</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button className="bg-amber-600 hover:bg-amber-700">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Generate Bills
-            </Button>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Billing Management</h1>
+          <p className="text-muted-foreground">Monthly bills are generated automatically after each month ends; you can also run billing manually.</p>
+        </div>
+
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Run Billing</CardTitle>
+              <CardDescription>Bills every active meter for the chosen month. Safe to repeat: meters already billed are skipped.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-2">
+              <Select value={runPeriod} onValueChange={setRunPeriod}>
+                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {endedPeriods().map((p) => <SelectItem key={p} value={p}>{periodLabel(p)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button className="bg-amber-600 hover:bg-amber-700" onClick={run} disabled={busy}>
+                {busy ? "Queuing…" : "Generate Bills"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Tariff</CardTitle>
+              <CardDescription>{tariff.data?.tariff.name}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-1 text-sm">
+              {(tariff.data?.tariff.blocks ?? []).map((b, i, all) => (
+                <div key={i} className="flex justify-between">
+                  <span>{i === 0 ? 0 : all[i - 1].upToM3}{b.upToM3 == null ? "+" : `–${b.upToM3}`} m³</span>
+                  <span>Ksh {b.ratePerM3} / m³</span>
+                </div>
+              ))}
+              <div className="flex justify-between border-t pt-1">
+                <span>Standing charge</span>
+                <span>{ksh(tariff.data?.tariff.standingCharge)} / month</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>Billing Cycles</CardTitle>
-            <CardDescription>Manage billing periods and generation</CardDescription>
+            <CardTitle>Billing Runs</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Cycle ID</th>
-                    <th className="px-4 py-2 text-left font-medium">Period</th>
-                    <th className="px-4 py-2 text-left font-medium">Due Date</th>
-                    <th className="px-4 py-2 text-left font-medium">Status</th>
-                    <th className="px-4 py-2 text-left font-medium">Bills Generated</th>
-                    <th className="px-4 py-2 text-left font-medium">Total Amount</th>
-                    <th className="px-4 py-2 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">BC-2025-04</td>
-                    <td className="px-4 py-2">March 1 - March 31, 2025</td>
-                    <td className="px-4 py-2">April 15, 2023</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">In Progress</span>
-                    </td>
-                    <td className="px-4 py-2">0 / 2,420</td>
-                    <td className="px-4 py-2">Ksh 0.00</td>
-                    <td className="px-4 py-2">
-                      <Button variant="ghost" size="sm">
-                        Generate
-                      </Button>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">BC-2025-03</td>
-                    <td className="px-4 py-2">February 1 - Februaryy 30, 2025</td>
-                    <td className="px-4 py-2">March 15, 2025</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Completed</span>
-                    </td>
-                    <td className="px-4 py-2">2,350 / 2,350</td>
-                    <td className="px-4 py-2">Ksh 29,257,500</td>
-                    <td className="px-4 py-2">
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">BC-2025-02</td>
-                    <td className="px-4 py-2">Jan 1 - Jan 31, 2025</td>
-                    <td className="px-4 py-2">February 15, 2023</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Completed</span>
-                    </td>
-                    <td className="px-4 py-2">2,320 / 2,320</td>
-                    <td className="px-4 py-2">Ksh 28,536,000</td>
-                    <td className="px-4 py-2">
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <ErrorNote error={runs.error} onRetry={runs.reload} />
+            <DataTable
+              rows={runs.data?.runs ?? []}
+              loading={runs.loading}
+              empty="No billing runs yet"
+              columns={[
+                { header: "Period", cell: (r) => r.label },
+                { header: "Status", cell: (r) => <StatusBadge status={r.status} /> },
+                { header: "Bills", cell: (r) => `${r.billsGenerated} / ${r.metersQueued ?? 0} meters` },
+                { header: "Billed", cell: (r) => ksh(r.totalBilled) },
+                { header: "Collected", cell: (r) => ksh(r.totalCollected) },
+                { header: "Last run", cell: (r) => `${formatDateTime(r.lastRequestedAt)}${r.lastRequestedBy === "scheduler" ? " (auto)" : ""}` },
+                { header: "", cell: (r) => <Button variant="ghost" size="sm" onClick={() => setViewPeriod(r.period)}>View bills</Button> },
+              ]}
+            />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle>Recent Bills</CardTitle>
-              <CardDescription>View and manage individual bills</CardDescription>
-            </div>
-            <div className="mt-4 flex items-center gap-2 sm:mt-0">
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>Bills</CardTitle>
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search bills..." className="pl-8" />
+                <Input placeholder="Customer, account, meter…" className="pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
               </div>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
+              <Select value={viewPeriod} onValueChange={setViewPeriod}>
+                <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="all">Latest bills</SelectItem>
+                  {endedPeriods().map((p) => <SelectItem key={p} value={p}>{periodLabel(p)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="partially_paid">Partly paid</SelectItem>
                   <SelectItem value="unpaid">Unpaid</SelectItem>
                   <SelectItem value="overdue">Overdue</SelectItem>
                 </SelectContent>
               </Select>
-              <Button>Search</Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Bill ID</th>
-                    <th className="px-4 py-2 text-left font-medium">Customer</th>
-                    <th className="px-4 py-2 text-left font-medium">Account #</th>
-                    <th className="px-4 py-2 text-left font-medium">Amount</th>
-                    <th className="px-4 py-2 text-left font-medium">Due Date</th>
-                    <th className="px-4 py-2 text-left font-medium">Status</th>
-                    <th className="px-4 py-2 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: 10 }).map((_, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="px-4 py-2">WB-2025-03-{1000 + index}</td>
-                      <td className="px-4 py-2">
-                        {["John Doe", "Jane Smith", "Robert Johnson", "Emily Davis", "Michael Wilson"][index % 5]}
-                      </td>
-                      <td className="px-4 py-2">WP-{1000 + index}</td>
-                      <td className="px-4 py-2">Ksh {((Math.random() * 200 + 50) * 100).toFixed(0)}</td>
-                      <td className="px-4 py-2">April 15, 2023</td>
-                      <td className="px-4 py-2">
-                        {index % 5 === 0 ? (
-                          <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-800">Overdue</span>
-                        ) : index % 3 === 0 ? (
-                          <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">Unpaid</span>
-                        ) : (
-                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Paid</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
-                            <FileText className="mr-1 h-4 w-4" />
-                            View
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Download className="mr-1 h-4 w-4" />
-                            PDF
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Showing 1-10 of 2,350 bills</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm">
-                  Next
-                </Button>
-              </div>
-            </div>
+            <ErrorNote error={bills.error} onRetry={bills.reload} />
+            <DataTable
+              rows={rows}
+              loading={bills.loading}
+              empty="No bills match"
+              columns={[
+                { header: "Period", cell: (b) => b.label },
+                { header: "Customer", cell: (b) => <><div>{b.customerName}</div><div className="text-muted-foreground">{b.accountNumber}</div></> },
+                { header: "Meter", cell: (b) => b.meterNumber },
+                { header: "Usage", cell: (b) => m3(b.consumptionLitres) },
+                { header: "Amount", cell: (b) => ksh(b.amountDue) },
+                { header: "Outstanding", cell: (b) => ksh(b.outstanding) },
+                { header: "Due", cell: (b) => formatDate(b.dueDate) },
+                { header: "Status", cell: (b) => <StatusBadge status={b.overdue ? "overdue" : b.status} /> },
+              ]}
+            />
           </CardContent>
         </Card>
       </div>
@@ -191,4 +172,3 @@ function BillingPage() {
 }
 
 export default BillingPage
-

@@ -1,133 +1,132 @@
-import { Link } from "react-router-dom"
-import { PlusCircle, Search } from "lucide-react"
+import { useState } from "react"
+import { Search } from "lucide-react"
+import { toast } from "react-toastify"
 
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { AdminLayout } from "../../Components/admin-layout"
+import { DataTable, matches } from "../../Components/data-table"
+import { ErrorNote } from "../../Components/status-badge"
+import { api, useApi } from "../../lib/api"
+import { balanceLabel, formatDate, fullName, displayPhone, ksh } from "../../lib/format"
+
+function RecordReading({ onDone }) {
+  const [form, setForm] = useState({ meterNumber: "", reading: "", readAt: "" })
+  const [busy, setBusy] = useState(false)
+  const set = (e) => setForm({ ...form, [e.target.id]: e.target.value })
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      await api("/api/readings", {
+        method: "POST",
+        body: {
+          meterNumber: form.meterNumber,
+          reading: Number(form.reading),
+          ...(form.readAt ? { readAt: new Date(form.readAt).toISOString() } : {}),
+        },
+      })
+      toast.success(`Reading for ${form.meterNumber.toUpperCase()} queued`)
+      setForm({ meterNumber: "", reading: "", readAt: "" })
+      onDone?.()
+    } catch (err) {
+      toast.error(err.data?.errors?.[0]?.message || err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Record a Meter Reading</CardTitle>
+        <CardDescription>For manual reads by field staff. Meter gateways post to the same endpoint with an API key.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="grid gap-4 md:grid-cols-4 md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="meterNumber">Meter number</Label>
+            <Input id="meterNumber" placeholder="MTR-12345678" value={form.meterNumber} onChange={set} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="reading">Reading (m³ on the dial)</Label>
+            <Input id="reading" type="number" step="0.001" min="0" value={form.reading} onChange={set} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="readAt">Read at (default: now)</Label>
+            <Input id="readAt" type="datetime-local" value={form.readAt} onChange={set} />
+          </div>
+          <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Submit Reading"}</Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
 
 function CustomersPage() {
+  const customers = useApi("/api/admin/customers")
+  const [query, setQuery] = useState("")
+  const [filter, setFilter] = useState("all")
+
+  const rows = (customers.data?.customers ?? []).filter((c) => {
+    if (filter === "connected" && !c.meterNumbers.length) return false
+    if (filter === "unconnected" && c.meterNumbers.length) return false
+    if (filter === "owing" && !(c.balance > 0)) return false
+    return matches(query, fullName(c), c.email, c.accountNumber, c.phoneNumber, displayPhone(c.phoneNumber), ...c.meterNumbers)
+  })
+
   return (
     <AdminLayout>
       <div className="container py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
-            <p className="text-muted-foreground">View and manage customer accounts</p>
-          </div>
-          <Button className="bg-amber-600 hover:bg-amber-700">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Customer
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Customer Management</h1>
+          <p className="text-muted-foreground">Customer accounts, meters and balances</p>
         </div>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Search Customers</CardTitle>
-            <CardDescription>Find customers by name, email, or account number</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col gap-4 md:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-8" />
-              </div>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="overdue">Payment Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" className="w-full md:w-auto">
-                Advanced Filters
-              </Button>
-              <Button className="w-full md:w-auto">Search</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <RecordReading onDone={() => setTimeout(customers.reload, 2000)} />
 
         <Card>
-          <CardHeader>
-            <CardTitle>Customer List</CardTitle>
-            <CardDescription>Showing 10 of 2,420 customers</CardDescription>
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle>Customer List</CardTitle>
+              <CardDescription>{rows.length} customer(s)</CardDescription>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Name, email, account, meter…" className="pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
+              <Select value={filter} onValueChange={setFilter}>
+                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All customers</SelectItem>
+                  <SelectItem value="connected">Connected</SelectItem>
+                  <SelectItem value="unconnected">No meter yet</SelectItem>
+                  <SelectItem value="owing">Balance owing</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Account #</th>
-                    <th className="px-4 py-2 text-left font-medium">Name</th>
-                    <th className="px-4 py-2 text-left font-medium">Email</th>
-                    <th className="px-4 py-2 text-left font-medium">Status</th>
-                    <th className="px-4 py-2 text-left font-medium">Balance</th>
-                    <th className="px-4 py-2 text-left font-medium">Last Payment</th>
-                    <th className="px-4 py-2 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: 10 }).map((_, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="px-4 py-2">WP-{1000 + index}</td>
-                      <td className="px-4 py-2">
-                        {["John Doe", "Jane Smith", "Robert Johnson", "Emily Davis", "Michael Wilson"][index % 5]}
-                      </td>
-                      <td className="px-4 py-2">
-                        {
-                          [
-                            "john@example.com",
-                            "jane@example.com",
-                            "robert@example.com",
-                            "emily@example.com",
-                            "michael@example.com",
-                          ][index % 5]
-                        }
-                      </td>
-                      <td className="px-4 py-2">
-                        {index % 5 === 0 ? (
-                          <span className="rounded-full bg-red-100 px-2 py-1 text-xs text-red-800">Overdue</span>
-                        ) : index % 4 === 0 ? (
-                          <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">Pending</span>
-                        ) : (
-                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-2">KSH {((Math.random() * 200 + 50) * 100).toFixed(0)}</td>
-                      <td className="px-4 py-2">
-                        {["Apr 10, 2025", "Apr 5, 2025", "March 28, 2025", "March 15, 2025", "March 10, 2025"][index % 5]}
-                      </td>
-                      <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/admin/customers/${1000 + index}`}>View</Link>
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            Edit
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Showing 1-10 of 2,420 customers</p>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm">
-                  Next
-                </Button>
-              </div>
-            </div>
+            <ErrorNote error={customers.error} onRetry={customers.reload} />
+            <DataTable
+              rows={rows}
+              rowKey={(c) => c.uid}
+              loading={customers.loading}
+              empty="No customers match"
+              columns={[
+                { header: "Account #", cell: (c) => c.accountNumber ?? "—" },
+                { header: "Name", cell: (c) => fullName(c) },
+                { header: "Contact", cell: (c) => <><div>{c.email}</div><div className="text-muted-foreground">{displayPhone(c.phoneNumber)}</div></> },
+                { header: "Meters", cell: (c) => (c.meterNumbers.length ? c.meterNumbers.join(", ") : <span className="text-muted-foreground">none</span>) },
+                { header: "Balance", cell: (c) => <span className={c.balance > 0 ? "text-red-500" : ""}>{balanceLabel(c.balance)}</span> },
+                { header: "Last Payment", cell: (c) => (c.lastPaymentAt ? `${ksh(c.lastPaymentAmount)} · ${formatDate(c.lastPaymentAt)}` : "—") },
+              ]}
+            />
           </CardContent>
         </Card>
       </div>

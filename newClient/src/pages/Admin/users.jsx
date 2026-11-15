@@ -1,175 +1,97 @@
-import { PlusCircle, Search } from "lucide-react"
+import { useState } from "react"
+import { Search } from "lucide-react"
+import { toast } from "react-toastify"
 
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { AdminLayout } from "../../Components/admin-layout"
+import { DataTable, matches } from "../../Components/data-table"
+import { StatusBadge, ErrorNote } from "../../Components/status-badge"
+import { useAuth } from "../../auth/AuthProvider"
+import { api, useApi } from "../../lib/api"
+import { formatDate, fullName } from "../../lib/format"
 
 function UsersPage() {
+  const { profile } = useAuth()
+  const users = useApi("/api/admin/users")
+  const [role, setRole] = useState("all")
+  const [query, setQuery] = useState("")
+  const [busy, setBusy] = useState(null)
+
+  const rows = (users.data?.users ?? []).filter(
+    (u) => (role === "all" || u.userRole === role) && matches(query, fullName(u), u.email, u.accountNumber)
+  )
+
+  const changeRole = async (user, newRole) => {
+    setBusy(user.uid)
+    try {
+      const res = await api(`/api/admin/users/${user.uid}/role`, { method: "PATCH", body: { role: newRole } })
+      toast.success(`${fullName(user)}: ${res.message}`)
+      users.reload()
+    } catch (err) {
+      toast.error(err.message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="container py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-            <p className="text-muted-foreground">Manage administrator accounts and permissions</p>
-          </div>
-          <Button className="bg-amber-600 hover:bg-amber-700">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+          <p className="text-muted-foreground">Grant or revoke administrator access. Changes take effect on the user's next request.</p>
         </div>
 
         <Card>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>System Users</CardTitle>
-              <CardDescription>Manage administrator accounts and access</CardDescription>
+              <CardTitle>All Accounts</CardTitle>
+              <CardDescription>{rows.length} account(s)</CardDescription>
             </div>
-            <div className="mt-4 flex items-center gap-2 sm:mt-0">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search users..." className="pl-8" />
+                <Input placeholder="Search users…" className="pl-8" value={query} onChange={(e) => setQuery(e.target.value)} />
               </div>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Role" />
-                </SelectTrigger>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="support">Support</SelectItem>
+                  <SelectItem value="all">All roles</SelectItem>
+                  <SelectItem value="admin">Admins</SelectItem>
+                  <SelectItem value="user">Customers</SelectItem>
                 </SelectContent>
               </Select>
-              <Button>Search</Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Name</th>
-                    <th className="px-4 py-2 text-left font-medium">Email</th>
-                    <th className="px-4 py-2 text-left font-medium">Role</th>
-                    <th className="px-4 py-2 text-left font-medium">Status</th>
-                    <th className="px-4 py-2 text-left font-medium">Last Login</th>
-                    <th className="px-4 py-2 text-left font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">Admin User</td>
-                    <td className="px-4 py-2">admin@waterpay.example</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-800">
-                        Administrator
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active</span>
-                    </td>
-                    <td className="px-4 py-2">March 10, 2025 9:42 AM</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-500">
-                          Deactivate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">Sarah Johnson</td>
-                    <td className="px-4 py-2">sarah@waterpay.example</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">Manager</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active</span>
-                    </td>
-                    <td className="px-4 py-2">March 9, 2025 2:15 PM</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-500">
-                          Deactivate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">David Miller</td>
-                    <td className="px-4 py-2">david@waterpay.example</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Support</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active</span>
-                    </td>
-                    <td className="px-4 py-2">April 10, 2025 10:30 AM</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-500">
-                          Deactivate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">Jessica Lee</td>
-                    <td className="px-4 py-2">jessica@waterpay.example</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Support</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">Inactive</span>
-                    </td>
-                    <td className="px-4 py-2">March 6, 2025 3:45 PM</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-green-500">
-                          Activate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="px-4 py-2">Michael Brown</td>
-                    <td className="px-4 py-2">michael@waterpay.example</td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">Manager</span>
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">Active</span>
-                    </td>
-                    <td className="px-4 py-2">March 7, 2025 9:15 AM</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-500">
-                          Deactivate
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <ErrorNote error={users.error} onRetry={users.reload} />
+            <DataTable
+              rows={rows}
+              rowKey={(u) => u.uid}
+              loading={users.loading}
+              empty="No users match"
+              columns={[
+                { header: "Name", cell: (u) => fullName(u) },
+                { header: "Email", cell: (u) => u.email },
+                { header: "Role", cell: (u) => <StatusBadge status={u.userRole} label={u.userRole === "admin" ? "Admin" : "Customer"} /> },
+                { header: "Account", cell: (u) => u.accountNumber ?? "—" },
+                { header: "Joined", cell: (u) => formatDate(u.createdOn) },
+                {
+                  header: "",
+                  cell: (u) =>
+                    u.uid === profile?.uid ? (
+                      <span className="text-xs text-muted-foreground">You</span>
+                    ) : u.userRole === "admin" ? (
+                      <Button variant="ghost" size="sm" disabled={busy === u.uid} onClick={() => changeRole(u, "user")}>Remove admin</Button>
+                    ) : (
+                      <Button variant="ghost" size="sm" disabled={busy === u.uid} onClick={() => changeRole(u, "admin")}>Make admin</Button>
+                    ),
+                },
+              ]}
+            />
           </CardContent>
         </Card>
       </div>
@@ -178,4 +100,3 @@ function UsersPage() {
 }
 
 export default UsersPage
-
