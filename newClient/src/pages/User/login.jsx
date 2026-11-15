@@ -1,5 +1,7 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth"
+import { auth } from "../../lib/firebase"
 import { CreditCard, Droplet, History, LifeBuoy, User } from "lucide-react"
 
 import { Button } from "../../components/ui/button"
@@ -7,54 +9,53 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 
+const AUTH_ERRORS = {
+  "auth/invalid-credential": "Incorrect email or password",
+  "auth/invalid-email": "Enter a valid email address",
+  "auth/user-disabled": "This account has been disabled",
+  "auth/too-many-requests": "Too many attempts. Try again later or reset your password.",
+  "auth/network-request-failed": "Network error. Check your connection.",
+}
+
 function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const navigate = useNavigate()
+  const [notice, setNotice] = useState("")
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    // Reset error state
     setError("")
-    
-    // Validate form
+    setNotice("")
     if (!email || !password) {
       setError("Both email and password are required")
       return
     }
-    
     setIsLoading(true)
-    
     try {
-      // Call login API
-      const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed')
-      }
-      
-      // Login successful
-      // Store email in localStorage
-      localStorage.setItem('userEmail', email)
-      navigate("/dashboard");
-      
-    } catch (error) {
-      console.error('Login error:', error)
-      setError(error.message || "Invalid credentials")
-    } finally {
+      // On success the AuthProvider loads the profile and RedirectIfSignedIn
+      // sends the user to their dashboard (or the admin dashboard).
+      await signInWithEmailAndPassword(auth, email.trim(), password)
+    } catch (err) {
+      setError(AUTH_ERRORS[err.code] || "Sign-in failed. Please try again.")
       setIsLoading(false)
     }
+  }
+
+  const handleForgotPassword = async () => {
+    setError("")
+    setNotice("")
+    if (!email) {
+      setError("Enter your email above first, then click \"Forgot password?\"")
+      return
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim())
+    } catch {
+      // Same message either way, so the form doesn't reveal which emails have accounts.
+    }
+    setNotice("If an account exists for that email, a password reset link is on its way.")
   }
 
   return (
@@ -133,7 +134,7 @@ function LoginPage() {
           <Card className="border-0 shadow-lg">
             <CardHeader>
               <CardTitle className="text-2xl">Sign In</CardTitle>
-              <CardDescription>Access your WaterPay account</CardDescription>
+              <CardDescription>Access your Maji ya Umma account</CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="grid gap-4">
@@ -142,6 +143,7 @@ function LoginPage() {
                     {error}
                   </div>
                 )}
+                {notice && <div className="bg-green-50 text-green-700 p-3 rounded-md text-sm">{notice}</div>}
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input 
@@ -156,9 +158,9 @@ function LoginPage() {
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link to="/forgot-password" className="text-xs text-[#1EBBD7] hover:underline">
+                    <button type="button" onClick={handleForgotPassword} className="text-xs text-[#1EBBD7] hover:underline">
                       Forgot password?
-                    </Link>
+                    </button>
                   </div>
                   <Input 
                     id="password" 

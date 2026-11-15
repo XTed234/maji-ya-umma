@@ -5,12 +5,17 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { Switch } from "../../components/ui/switch";
+import { toast } from "react-toastify";
+import { api } from "../../lib/api";
+import { useAuth } from "../../auth/AuthProvider";
+import { displayPhone } from "./shared";
 
 function ProfilePage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const { refreshProfile } = useAuth();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -25,27 +30,20 @@ function ProfilePage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const email = localStorage.getItem("userEmail");
-        const response = await fetch(`http://localhost:5000/api/profile?email=${email}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          setUser(data.user);
-          setFormData({
-            firstName: data.user.firstName || "",
-            lastName: data.user.lastName || "",
-            email: data.user.email || "",
-            phoneNumber: data.user.phoneNumber || "",
-            address: data.user.address || "",
-            city: data.user.city || "",
-            state: data.user.state || "",
-            zipCode: data.user.zipCode || "",
-          });
-        } else {
-          setError(data.message || "Failed to fetch user profile.");
-        }
+        const data = await api("/api/me");
+        setUser(data.user);
+        setFormData({
+          firstName: data.user.firstName || "",
+          lastName: data.user.lastName || "",
+          email: data.user.email || "",
+          phoneNumber: displayPhone(data.user.phoneNumber),
+          address: data.user.address || "",
+          city: data.user.city || "",
+          state: data.user.state || "",
+          zipCode: data.user.zipCode || "",
+        });
       } catch (err) {
-        setError("Error fetching user profile.");
+        setError(err.message || "Error fetching user profile.");
       } finally {
         setLoading(false);
       }
@@ -59,26 +57,22 @@ function ProfilePage() {
   };
 
   const handleSaveChanges = async () => {
+    setSaving(true);
     try {
-      const response = await fetch("http://localhost:5000/api/update-profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        alert("Profile updated successfully!");
-      } else {
-        alert(result.message || "Failed to update profile.");
-      }
+      // email is not sent: the account is identified by the session token.
+      const { email: _email, ...changes } = formData;
+      const result = await api("/api/me", { method: "PUT", body: changes });
+      toast.success(result.message);
+      setTimeout(refreshProfile, 1500); // applied asynchronously by the profiles worker
     } catch (error) {
-      alert("Error updating profile.");
+      toast.error(error.message || "Failed to update profile.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <p>Loading profile...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  if (loading) return <CustomerLayout><p className="py-8">Loading profile…</p></CustomerLayout>;
+  if (error) return <CustomerLayout><p className="py-8 text-red-500">{error}</p></CustomerLayout>;
 
 
 
@@ -96,7 +90,7 @@ function ProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your account details</CardDescription>
+                <CardDescription>Account {user?.accountNumber}{user?.meterNumbers?.length ? ` · Meter ${user.meterNumbers.join(", ")}` : ""}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -114,8 +108,8 @@ function ProfilePage() {
                   <Input id="email" type="email" value={formData.email} disabled />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" value={formData.phoneNumber} onChange={handleChange} />
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Input id="phoneNumber" type="tel" value={formData.phoneNumber} onChange={handleChange} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="address">Address</Label>
@@ -131,14 +125,14 @@ function ProfilePage() {
                     <Input id="state" value={formData.state} onChange={handleChange} />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="zip">ZIP Code</Label>
-                    <Input id="zip" value={formData.zipCode} onChange={handleChange} />
+                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Input id="zipCode" value={formData.zipCode} onChange={handleChange} />
                   </div>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button className="bg-water hover:bg-water-dark" onClick={handleSaveChanges}>
-                  Save Changes
+                <Button className="bg-water hover:bg-water-dark" onClick={handleSaveChanges} disabled={saving}>
+                  {saving ? "Saving…" : "Save Changes"}
                 </Button>
               </CardFooter>
             </Card>

@@ -6,6 +6,10 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
+import { toast } from "react-toastify";
+import { StatusBadge, Empty } from "../../Components/status-badge";
+import { api, useApi } from "../../lib/api";
+import { formatDate } from "./shared";
 
 function FeedbackPage() {
   const [subject, setSubject] = useState("");
@@ -13,10 +17,16 @@ function FeedbackPage() {
   const [priority, setPriority] = useState("");
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  const tickets = useApi("/api/me/tickets");
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!category || !priority) {
+      toast.error("Choose a category and a priority");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("subject", subject);
@@ -27,27 +37,24 @@ function FeedbackPage() {
       formData.append("attachment", attachment);
     }
 
+    setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/feedback", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-      alert(data.message);
-
-      // Reset fields
+      const data = await api("/api/me/tickets", { method: "POST", formData });
+      toast.success(data.message);
       setSubject("");
       setCategory("");
       setPriority("");
       setMessage("");
       setAttachment(null);
-
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+      // The ticket is written by a worker; give it a moment before refreshing.
+      setTimeout(tickets.reload, 1500);
     } catch (error) {
-      console.error("Error submitting feedback:", error);
+      toast.error(error.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -121,7 +128,7 @@ function FeedbackPage() {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="attachment">Attachment (optional)</Label>
+                  <Label htmlFor="attachment">Attachment (optional, max 700 KB)</Label>
                   <Input
                     id="attachment"
                     type="file"
@@ -132,14 +139,34 @@ function FeedbackPage() {
               </CardContent>
 
               <CardFooter>
-                <Button type="submit" className="w-full bg-water hover:bg-water-dark">
-                  Submit Ticket
+                <Button type="submit" className="w-full bg-water hover:bg-water-dark" disabled={submitting}>
+                  {submitting ? "Submitting…" : "Submit Ticket"}
                 </Button>
               </CardFooter>
             </form>
           </Card>
 
           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Tickets</CardTitle>
+                <CardDescription>Status of your requests and our replies</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(tickets.data?.tickets ?? []).length === 0 && <Empty>{tickets.loading ? "Loading…" : "No tickets yet"}</Empty>}
+                {(tickets.data?.tickets ?? []).map((t) => (
+                  <div key={t.id} className="border-b pb-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-medium">{t.subject}</p>
+                      <StatusBadge status={t.status} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{formatDate(t.createdAt)} · {t.category} · {t.priority} priority</p>
+                    {t.response && <p className="mt-2 rounded bg-muted p-2 text-sm"><span className="font-medium">Reply:</span> {t.response}</p>}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Contact Information</CardTitle>

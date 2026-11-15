@@ -1,5 +1,8 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "../../lib/firebase"
+import { api } from "../../lib/api"
 import { Droplet, Shield, CheckCircle } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
@@ -7,7 +10,6 @@ import { Input } from "../../components/ui/input"
 import { Label } from "../../components/ui/label"
 
 function RegisterPage() {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -37,22 +39,12 @@ function RegisterPage() {
     setError("");
     
     try {
-      const response = await fetch("http://localhost:5000/api/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      const data = await response.json();
-      navigate("/login");
-      
-    } catch (error) {
-      console.error("Error during registration:", error);
-      setError("Network error or server unavailable. Please try again later.");
-    } finally {
-      setIsLoading(false);
+      await api("/api/signup", { method: "POST", body: formData })
+      // Sign straight in; RedirectIfSignedIn then opens the dashboard.
+      await signInWithEmailAndPassword(auth, formData.email.trim(), formData.password)
+    } catch (err) {
+      setError(err.message || "Registration failed. Please try again.")
+      setIsLoading(false)
     }
   };
 
@@ -166,7 +158,7 @@ function RegisterPage() {
                   <Label htmlFor="phoneNumber">Phone Number</Label>
                   <Input 
                     id="phoneNumber" 
-                    placeholder="+254111111111" 
+                    placeholder="0712 345 678" 
                     value={formData.phoneNumber}
                     onChange={handleChange}
                     required
@@ -227,8 +219,10 @@ function RegisterPage() {
                     type="password" 
                     value={formData.password}
                     onChange={handleChange}
+                    minLength={8}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">At least 8 characters</p>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col">
